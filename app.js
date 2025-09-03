@@ -10,7 +10,7 @@ const app = express();
 app.use(cookieParser());
 
 const corsOption={
-    origin:process.env.CLIENT_URL,
+    origin:[process.env.CLIENT_URL,"http://localhost:5173"],
     credentials:true
 };
 app.use(cors(corsOption)); 
