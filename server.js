@@ -1,53 +1,48 @@
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import cors from "cors";
+const http = require('http');
+const { Server } = require('socket.io');
+const connectDB = require('./src/config/db');
+const app = require('./app');
 
-const app = express();
-const server = http.createServer(app);
+connectDB()
+  .then(() => {
+    const server = http.createServer(app);
 
-// ✅ Allowed frontend domains
-const allowedOrigins = [
-  "https://chat-app-frontend-lovat-six.vercel.app",
-  "https://chat-app-frontend-git-main-sidharthsinghshrinets-projects.vercel.app",
-  "https://chat-app-frontend-4swvt1qo0-sidharthsinghshrinets-projects.vercel.app",
-  "http://localhost:5173"
-];
+    const io = new Server(server, {
+      cors: {
+        origin: [process.env.CLIENT_URL],
+        methods: ['GET', 'POST'],
+        credentials: true,
+      },
+    });
 
-// ✅ Express CORS
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+    const userSocketMap = {};
 
-app.use(express.json());
+    io.on('connection', (socket) => {
+      console.log('✅ User connected:', socket.id);
 
-// ✅ Socket.IO with CORS
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: true
-  }
-});
+      const userId = socket.handshake.query.userId;
+      if (userId) {
+        userSocketMap[userId] = socket.id;
+      }
 
-// ✅ Simple test route
-app.get("/", (req, res) => {
-  res.json({ message: "Backend is running 🚀" });
-});
+      io.emit('getOnlineUsers', Object.keys(userSocketMap));
 
-// ✅ Socket.IO connection
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
+      socket.on('disconnect', () => {
+        console.log('❌ User disconnected:', socket.id);
+        delete userSocketMap[userId];
+        io.emit('getOnlineUsers', Object.keys(userSocketMap));
+      });
+    });
 
-  socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
+    // ✅ Make io & userSocketMap available in controllers
+    app.set('io', io);
+    app.set('userSocketMap', userSocketMap);
+
+    server.listen(process.env.PORT || 9000, () => {
+      console.log(`🚀 Server running at port ${process.env.PORT || 9000}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Error connecting DB:', err);
+    process.exit(1);
   });
-});
-
-// ✅ Start server
-const PORT = process.env.PORT || 9000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
