@@ -17,8 +17,10 @@ app.use(cookieParser());
 
 
 const allowedOrigins = [
-  "http://localhost:5173", 
-  "https://chat-app-frontend-egcs8elfo-sidharthsinghshrinets-projects.vercel.app"
+  "https://chat-app-frontend-lovat-six.vercel.app",
+  "https://chat-app-frontend-git-main-sidharthsinghshrinets-projects.vercel.app",
+  "https://chat-app-frontend-4swvt1qo0-sidharthsinghshrinets-projects.vercel.app",
+  "http://localhost:5173"
 ];
 
 app.use(
